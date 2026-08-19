@@ -1,0 +1,5 @@
+prettymaps>=1.0.0
+matplotlib>=3.7
+osmnx>=1.9
+geopandas>=0.14
+shapely>=2.0
