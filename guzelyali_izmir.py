@@ -16,6 +16,8 @@ nominatim.openstreetmap.org adresine) erişim gerekir.
 import argparse
 import sys
 
+import requests
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -111,6 +113,28 @@ PALETTES = {
 
 TITLE_COLORS = {"ege": "#2F3737", "gece": "#E8D5B7"}
 
+OSM_HOSTS = {
+    "Overpass (harita verisi)": "https://overpass-api.de/api/status",
+    "Nominatim (geocode)": "https://nominatim.openstreetmap.org/status",
+}
+
+
+def check_osm_access():
+    """OSM sunucularına erişimi önden dener.
+
+    osmnx, veri çekemediği katmanları sessizce boş geçtiği için ağ kapalıysa
+    script boş bir harita üretebilir. Bunu baştan yakalıyoruz.
+    """
+    unreachable = []
+    for label, url in OSM_HOSTS.items():
+        try:
+            resp = requests.get(url, timeout=20, headers={"User-Agent": "prettymaps-guzelyali"})
+            if resp.status_code >= 400:
+                unreachable.append(f"{label}: HTTP {resp.status_code}")
+        except requests.RequestException as exc:
+            unreachable.append(f"{label}: {type(exc).__name__}")
+    return unreachable
+
 
 def build_args():
     p = argparse.ArgumentParser(description="İzmir Güzelyalı haritası üretir.")
@@ -128,6 +152,10 @@ def build_args():
     p.add_argument("--out", default=None, help="Çıktı dosyası (.png).")
     p.add_argument("--dpi", type=int, default=300)
     p.add_argument("--no-title", action="store_true", help="Başlık yazısını gizle.")
+    p.add_argument(
+        "--skip-check", action="store_true",
+        help="OSM erişim ön kontrolünü atla (ör. kendi Overpass sunucunuzu kullanıyorsanız).",
+    )
     return p.parse_args()
 
 
@@ -137,12 +165,25 @@ def main():
     style = PALETTES[args.palette]
     out = args.out or f"guzelyali_izmir_{args.palette}_{args.radius}m.png"
 
+    if not args.skip_check:
+        unreachable = check_osm_access()
+        if unreachable:
+            print(
+                "OpenStreetMap sunucularına ulaşılamıyor:\n  - "
+                + "\n  - ".join(unreachable)
+                + "\n\nHarita verisi çalışma anında OSM'den indiriliyor; bu adresler "
+                  "açık olmadan harita üretilemez (script boş bir görsel üretmesin diye "
+                  "burada duruyor). Ağ/proxy izinlerini kontrol edip tekrar deneyin.",
+                file=sys.stderr,
+            )
+            return 2
+
     fig, ax = plt.subplots(figsize=(12, 12), constrained_layout=True)
     ax.set_aspect("equal")
 
     print(f"OSM verisi indiriliyor: {query} (r={args.radius} m) ...", flush=True)
     try:
-        prettymaps.plot(
+        plot = prettymaps.plot(
             query,
             radius=args.radius,
             ax=ax,
@@ -160,6 +201,20 @@ def main():
             file=sys.stderr,
         )
         return 1
+
+    drawn = {
+        name: len(gdf)
+        for name, gdf in plot.geodataframes.items()
+        if name != "perimeter" and len(gdf) > 0
+    }
+    if not drawn:
+        print(
+            "Hiçbir katman için veri gelmedi — harita boş çıkacaktı, kaydetmiyorum. "
+            "OSM erişimini kontrol edin.",
+            file=sys.stderr,
+        )
+        return 3
+    print("Çizilen katmanlar: " + ", ".join(f"{k}={v}" for k, v in sorted(drawn.items())))
 
     ax.set_axis_off()
 

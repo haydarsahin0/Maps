@@ -1,5 +1,25 @@
-prettymaps>=1.0.0
-matplotlib>=3.7
-osmnx>=1.9
-geopandas>=0.14
+# Bu ortamda doğrulanan sürümler (Python 3.11).
+#
+# Not: prettymaps 1.4.2'nin meta verisi `numpy<1.25` ve pek çok ek bağımlılık
+# (streamlit, elevation, rasterio ...) ister; düz `pip install prettymaps`
+# çözümlemesi bu yüzden çok uzun sürebiliyor. Aşağıdaki set, harita çizimi için
+# gereken asgari ve çalışan bileşimdir; prettymaps'i bağımlılıklarını çözmeden
+# kurmak için README'deki `--no-deps` adımına bakın.
+
+prettymaps==1.4.2
+osmnx>=1.9.3,<2.0        # prettymaps 1.4.x osmnx 2.x ile uyumlu değil
+numpy>=2.0
+pandas>=2.3,<3
+geopandas>=1.0
 shapely>=2.0
+matplotlib>=3.9
+networkx>=3.0
+scipy>=1.11
+requests>=2.31
+tqdm>=4.60
+
+# prettymaps'in import zincirinde gereken paketler
+opencv-python-headless>=4.11
+scikit-image>=0.25
+rioxarray>=0.18
+vsketch>=1.0

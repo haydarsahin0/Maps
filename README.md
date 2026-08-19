@@ -1,12 +1,22 @@
 # İzmir · Güzelyalı haritası
 
-[prettymaps](https://github.com/marceloprates/prettymaps) kullanarak İzmir'in
-Güzelyalı semtinin (Konak) OpenStreetMap verisinden stilize haritasını üretir.
+[prettymaps](https://github.com/marceloprates/prettymaps) ile İzmir'in Güzelyalı
+(Konak) semtinin OpenStreetMap verisinden stilize haritasını üretir.
 
 ## Kurulum
 
 ```bash
 pip install -r requirements.txt
+```
+
+`pip install prettymaps` çözümlemesi takılırsa (paketin `numpy<1.25` pini
+yüzünden olabiliyor), bağımlılıkları önce kurup prettymaps'i tek başına almak
+işi hızlandırır:
+
+```bash
+pip install osmnx'<2.0' geopandas shapely matplotlib scipy networkx \
+            opencv-python-headless scikit-image rioxarray vsketch tqdm
+pip install --no-deps prettymaps==1.4.2
 ```
 
 ## Çalıştırma
@@ -25,35 +35,47 @@ python guzelyali_izmir.py --out guzelyali.png --dpi 400
 | Bayrak | Varsayılan | Açıklama |
 | --- | --- | --- |
 | `--lat` / `--lon` | `38.4022`, `27.0705` | Merkez koordinat (Güzelyalı İskelesi civarı) |
-| `--query` | yok | Yer adı ile geocode (ör. `"Güzelyalı, Konak, İzmir, Türkiye"`) |
+| `--query` | yok | Yer adıyla çalışmak için (ör. `"Güzelyalı, Konak, İzmir, Türkiye"`) |
 | `--radius` | `1100` | Metre cinsinden yarıçap |
 | `--palette` | `ege` | `ege` (gündüz) veya `gece` (koyu) |
-| `--dpi` | `300` | Çıktı çözünürlüğü |
+| `--out` | otomatik | Çıktı dosyası |
+| `--dpi` | `300` | Çözünürlük |
 | `--no-title` | — | Başlık/altyazıyı gizler |
+| `--skip-check` | — | OSM erişim ön kontrolünü atlar |
 
 Varsayılan olarak yer adı yerine **koordinat** kullanılır: Türkiye'de Çanakkale
-ve Bursa/Mudanya dahil birden fazla "Güzelyalı" bulunduğu için geocode sonucu
-yanlış semte düşebiliyor. Yer adıyla denemek isterseniz `--query` bayrağını
-kullanın.
+ve Bursa/Mudanya dahil birden fazla "Güzelyalı" olduğu için geocode sonucu
+yanlış semte düşebiliyor. Yer adıyla denemek isterseniz `--query` kullanın.
+
+## Katmanlar
+
+`streets`, `building`, `sea`, `water`, `green`, `beach`, `parking`
+(iskele/yaya alanları dahil). Deniz için prettymaps'in `sea` katmanı kullanılır:
+İzmir Körfezi, `natural=coastline` çizgilerinden poligona dönüştürülür — kapalı
+su poligonu olmayan kıyılarda denizin boş kalmasını bu önler.
 
 ## Ağ gereksinimi
 
-Veri çalışma anında OpenStreetMap'ten çekilir; şu adreslere erişim gerekir:
+Veri çalışma anında OpenStreetMap'ten çekilir:
 
-- `overpass-api.de` (harita verisi)
-- `nominatim.openstreetmap.org` (yalnızca `--query` ile geocode için)
+- `overpass-api.de` — harita verisi (zorunlu)
+- `nominatim.openstreetmap.org` — yalnızca `--query` ile geocode için
 
-Bu adresler kapalıysa script, ağ hatasını açık bir mesajla bildirip çıkar.
+Script çizime başlamadan önce bu adresleri yoklar. Erişim yoksa **boş bir görsel
+üretmek yerine** hata verip çıkar (çıkış kodu `2`); osmnx erişemediği katmanları
+sessizce boş geçtiği için bu kontrol önemlidir. Veri geldiği hâlde tüm katmanlar
+boş kalırsa çıkış kodu `3` olur.
 
-## Kıyı şeridi notu
+## Test
 
-İzmir Körfezi OSM'de yer yer `natural=coastline` çizgileriyle modellenir; kapalı
-bir su poligonu bulunmayan bölgelerde deniz alanı boş kalabilir. Script `water`
-katmanında `natural=water|bay|strait|coastline` ve `place=sea` etiketlerinin
-hepsini toplar; yine de boş kalırsa `--radius` değerini büyütmek genelde körfez
-poligonunu kapsama alır.
+Ağ gerektirmeyen duman testi — paletlerin ve katman stillerinin matplotlib
+tarafından kabul edildiğini sentetik geometriyle doğrular:
+
+```bash
+python tests/test_styles.py
+```
 
 ## Lisans / atıf
 
-Harita verisi © OpenStreetMap katılımcıları (ODbL). Çizim motoru:
-prettymaps (Marcelo Prates, AGPL-3.0).
+Harita verisi © OpenStreetMap katılımcıları (ODbL). Çizim motoru: prettymaps
+(Marcelo Prates, AGPL-3.0).
