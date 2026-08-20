@@ -16,8 +16,9 @@ from typing import Any
 
 import geopandas as gp
 import pandas as pd
-from shapely.geometry import LineString, MultiPolygon, Point, box
-from shapely.ops import linemerge, unary_union
+from shapely.geometry import Point
+
+from sea import derive_sea
 
 # GDAL OSM sürücüsünün ürettiği katmanlar.
 OSM_SUBLAYERS = ("points", "lines", "multilinestrings", "multipolygons")
@@ -118,63 +119,14 @@ def _collect(frames: dict[str, gp.GeoDataFrame], tags: dict) -> gp.GeoDataFrame:
     return gp.GeoDataFrame(pd.concat(parts, ignore_index=True), crs=4326)
 
 
-def _extend_line(line: LineString, distance: float) -> LineString:
-    """Bir çizgiyi iki ucundan, uç segmentlerin yönünde uzatır.
-
-    Gerçek OSM kıyı çizgileri indirilen alanın dışına taşar; kullanıcının
-    verdiği dosya tam da sınır kutusunda bitiyorsa çizgi kutuyu ikiye
-    bölemez ve deniz tespit edilemez. Uçları uzatarak bunu garantiliyoruz.
-    """
-    coords = list(line.coords)
-    if len(coords) < 2:
-        return line
-
-    def outward(p_inner, p_outer):
-        dx, dy = p_outer[0] - p_inner[0], p_outer[1] - p_inner[1]
-        length = (dx * dx + dy * dy) ** 0.5
-        if length == 0:
-            return p_outer
-        return (p_outer[0] + dx / length * distance, p_outer[1] + dy / length * distance)
-
-    return LineString(
-        [outward(coords[1], coords[0])] + coords + [outward(coords[-2], coords[-1])]
-    )
-
-
 def _derive_sea(
     frames: dict[str, gp.GeoDataFrame],
     perimeter: gp.GeoDataFrame,
     streets: gp.GeoDataFrame,
 ) -> gp.GeoDataFrame:
-    """`natural=coastline` çizgilerinden deniz poligonu üretir.
-
-    prettymaps'in yaklaşımı: kıyı çizgisi sınır kutusunu ikiye böler; yol ağıyla
-    kesişmeyen parça denizdir.
-    """
+    """`natural=coastline` çizgilerinden deniz poligonu üretir (bkz. sea.py)."""
     coast = _collect(frames, {"natural": "coastline"})
-    if coast.empty:
-        return gp.GeoDataFrame(geometry=[], crs=4326)
-
-    bbox = box(*perimeter.total_bounds)
-    joined = unary_union(coast.geometry.tolist())
-    merged = linemerge(joined) if joined.geom_type == "MultiLineString" else joined
-    lines = [g for g in getattr(merged, "geoms", [merged]) if g.geom_type == "LineString"]
-    diagonal = ((bbox.bounds[2] - bbox.bounds[0]) ** 2 + (bbox.bounds[3] - bbox.bounds[1]) ** 2) ** 0.5
-    coastline = unary_union([_extend_line(line, diagonal) for line in lines])
-    candidates = bbox.difference(coastline.buffer(1e-9))
-    candidates = list(getattr(candidates, "geoms", [candidates]))
-
-    if streets.empty:
-        # Yol ağı yoksa ayrım yapamayız; en küçük parçayı deniz saymak yanıltıcı
-        # olurdu, boş dönüyoruz.
-        return gp.GeoDataFrame(geometry=[], crs=4326)
-
-    sea_parts = [c for c in candidates if not streets.geometry.intersects(c).any()]
-    if not sea_parts:
-        return gp.GeoDataFrame(geometry=[], crs=4326)
-
-    sea = unary_union(MultiPolygon(sea_parts).geoms).buffer(1e-8)
-    return gp.GeoDataFrame(geometry=[sea], crs=4326)
+    return derive_sea(perimeter, coast, obstacles=(streets,))
 
 
 def load_gdfs(
@@ -193,7 +145,12 @@ def load_gdfs(
     streets_spec = layers.get("streets", {})
     streets = _street_lines(frames, streets_spec.get("width", {}))
 
-    for name, spec in layers.items():
+    # "sea" LAYERS içinde tanımlı değil (çevrimiçi yolda postprocessing ile
+    # üretiliyor); burada her zaman üretiyoruz çünkü dosyadan okurken ucuz.
+    specs = dict(layers)
+    specs.setdefault("sea", {})
+
+    for name, spec in specs.items():
         if name == "perimeter":
             continue
         if name == "streets":

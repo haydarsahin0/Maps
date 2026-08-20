@@ -47,7 +47,8 @@ LAYERS = {
         }
     },
     "building": {"tags": {"building": True, "landuse": "construction"}},
-    # İzmir Körfezi: kıyı çizgisinden (natural=coastline) deniz poligonu üretir.
+    # İzmir Körfezi: prettymaps'in `sea` katmanı, natural=coastline
+    # çizgilerinden deniz poligonu üretir.
     "sea": {},
     # Kapalı su poligonları (liman havuzları, göletler, koylar).
     "water": {"tags": {"natural": ["water", "bay"]}},
