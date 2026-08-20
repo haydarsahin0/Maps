@@ -70,7 +70,7 @@ PALETTES = {
     # Ege esintili gündüz teması: kremit binalar, turkuaz körfez.
     "ege": {
         "perimeter": {"fill": False, "lw": 0, "zorder": 0},
-        "background": {"fc": "#F2F4CB", "zorder": -1},
+        "background": {"fc": "#F2F4CB", "ec": "none", "zorder": -1},
         "green": {
             "fc": "#8BB174", "ec": "#2F3737", "hatch_c": "#A7C497",
             "hatch": "ooo...", "lw": 1, "zorder": 1,
@@ -97,7 +97,7 @@ PALETTES = {
     # Koyu tema: körfez lacivert, binalar sıcak tonlarda parlıyor.
     "gece": {
         "perimeter": {"fill": False, "lw": 0, "zorder": 0},
-        "background": {"fc": "#12181F", "zorder": -1},
+        "background": {"fc": "#12181F", "ec": "none", "zorder": -1},
         "green": {"fc": "#1F3B2C", "ec": "#2C5240", "lw": 1, "zorder": 1},
         "beach": {"fc": "#3A3524", "ec": "#4A452F", "lw": 1, "zorder": 3},
         "parking": {"fc": "#1A222B", "ec": "#2B3742", "lw": 1, "zorder": 3},

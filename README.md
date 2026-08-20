@@ -66,13 +66,32 @@ Script çizime başlamadan önce bu adresleri yoklar. Erişim yoksa **boş bir g
 sessizce boş geçtiği için bu kontrol önemlidir. Veri geldiği hâlde tüm katmanlar
 boş kalırsa çıkış kodu `3` olur.
 
+## İnternet erişimi olmayan ortamlar
+
+Overpass'a çıkılamıyorsa harita yerel bir OSM dosyasından çizilebilir:
+
+```bash
+# openstreetmap.org > Export ile alanı .osm olarak indirin, ya da bir .osm.pbf kullanın
+python guzelyali_from_file.py guzelyali.osm --radius 1100 --palette ege
+```
+
+Desteklenen kaynaklar: `.osm` (XML), `.osm.pbf`, `.geojson`, `.gpkg`.
+Okuma GDAL'ın OSM sürücüsüyle (pyogrio) yapılır; etiketler hem ayrı sütunlardan
+hem de `other_tags` alanından okunur. Deniz, `natural=coastline` çizgisinin sınır
+kutusunu ikiye bölmesi ve yol ağıyla kesişmeyen parçanın deniz sayılması
+yöntemiyle üretilir (prettymaps'in yaklaşımı); dosyanın kenarında biten kıyı
+çizgileri kutuyu bölebilsin diye uçlarından uzatılır.
+
+İlgili dosyalar: `osm_extract.py` (okuma/filtreleme/kırpma), `render.py` (çizim).
+
 ## Test
 
 Ağ gerektirmeyen duman testi — paletlerin ve katman stillerinin matplotlib
 tarafından kabul edildiğini sentetik geometriyle doğrular:
 
 ```bash
-python tests/test_styles.py
+python tests/test_styles.py          # palet/stil duman testi
+python tests/test_offline_render.py  # sentetik .osm -> PNG, uçtan uca
 ```
 
 ## Lisans / atıf
