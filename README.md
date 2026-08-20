@@ -66,6 +66,19 @@ Script çizime başlamadan önce bu adresleri yoklar. Erişim yoksa **boş bir g
 sessizce boş geçtiği için bu kontrol önemlidir. Veri geldiği hâlde tüm katmanlar
 boş kalırsa çıkış kodu `3` olur.
 
+## GitHub Actions ile otomatik üretim (bilgisayar gerekmeden)
+
+`.github/workflows/build-map.yml`, her `*.py` değişikliğinde GitHub runner'ında
+haritayı üretir; runner'ın OpenStreetMap erişimi olduğu için Overpass'a çıkamayan
+ortamlarda da sonuç alınır. İş akışı:
+
+1. Bağımlılıkları kurar (prettymaps `--no-deps` ile, çözümleme kilitlenmesin diye),
+2. `ege` ve `gece` paletlerinde iki harita çizer,
+3. PNG'leri `site/` altına depoya işler,
+4. `site/`'ı **GitHub Pages**'te yayımlar ve iş çıktısı (artifact) olarak yükler.
+
+Elle çalıştırmak için: Actions sekmesi > "Güzelyalı haritası" > Run workflow.
+
 ## İnternet erişimi olmayan ortamlar
 
 Overpass'a çıkılamıyorsa harita yerel bir OSM dosyasından çizilebilir:
