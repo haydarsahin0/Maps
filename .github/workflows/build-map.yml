@@ -56,7 +56,10 @@ jobs:
             "opencv-python-headless>=4.11" \
             "scikit-image>=0.25" \
             "rioxarray>=0.18" \
-            "vsketch>=1.0"
+            "vsketch>=1.0" \
+            "thefuzz>=0.22" \
+            "elevation>=1.1" \
+            "ipython>=8.0"
           pip install --no-deps "prettymaps==1.4.2"
           python -c "import prettymaps, osmnx; print('prettymaps hazır, osmnx', osmnx.__version__)"
 
